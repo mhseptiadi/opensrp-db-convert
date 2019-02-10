@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gosimple/slug"
 	_ "github.com/lib/pq"
@@ -19,6 +20,7 @@ const (
 	PORT        = "5431"
 	RELPATH     = "./"
 	SCHEMA      = "sid"
+	LIMIT       = 1000
 )
 
 type Event struct {
@@ -33,9 +35,9 @@ type Event struct {
 	Form_submission_id string       `json:"formSubmissionId"`
 	Location_id        string       `json:"locationId"`
 	Provider_id        string       `json:"providerId"`
-	Server_version     int          `json:"serverVersion"`
+	Server_version     int64        `json:"serverVersion"`
 	Type               string       `json:"type"`
-	Version            int          `json:"version"`
+	Version            int64        `json:"version"`
 	Obs                []Obs_Struct `json:"obs"`
 }
 
@@ -61,12 +63,12 @@ func main() {
 	defer db.Close()
 
 	eventID := lastEventID()
-	limit := 1000
+	limit := LIMIT
 
 	fmt.Println("# Querying event id > " + strconv.Itoa(eventID))
 
 	mainQuery := fmt.Sprintf(` select 
-	core.event_metadata.document_id, core.event_metadata.base_entity_id,
+	core.event_metadata.document_id, core.event_metadata.base_entity_id, core.event_metadata.location_id,
 	core.event.id, core.event.json, core.event_metadata.event_type,
 	core.client_metadata.first_name, core.client_metadata.last_name, core.client_metadata.birth_date,
 	core.event_metadata.date_created, core.event_metadata.event_date, core.event_metadata.provider_id
@@ -83,6 +85,7 @@ func main() {
 		var event_id int
 		var document_id string
 		var base_entity_id string
+		var location_id string
 		var jsonString string
 		var event_type string
 		var first_name *string
@@ -91,7 +94,7 @@ func main() {
 		var date_created string
 		var event_date string
 		var provider_id string
-		err = rows.Scan(&document_id, &base_entity_id, &event_id, &jsonString, &event_type, &first_name, &last_name, &birth_date, &date_created, &event_date, &provider_id)
+		err = rows.Scan(&document_id, &base_entity_id, &location_id, &event_id, &jsonString, &event_type, &first_name, &last_name, &birth_date, &date_created, &event_date, &provider_id)
 		eventID = event_id
 		checkErr(err)
 
@@ -108,8 +111,21 @@ func main() {
 		query := strings.Replace(insertQuery, "tableName", tableName, -1)
 		query = strings.Replace(query, "-", "_", -1)
 
-		queryFields := `("first_name", "last_name", "birth_date", "event_id", "date_created", "event_date", "provider_id", "document_id", "base_entity_id", `
-		queryValues := fmt.Sprintf("VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', ", isNull(first_name), isNull(last_name), isNull(birth_date), strconv.Itoa(event_id), date_created, event_date, provider_id, document_id, base_entity_id)
+		clientVersionTime := time.Unix(0, eventData.Version*int64(time.Millisecond))
+		clientVersionSubmissionDate := strings.Replace(clientVersionTime.String(), " WIB", "", -1)
+		serverVersionTime := time.Unix(0, eventData.Server_version*int64(time.Millisecond))
+		serverVersionSubmissionDate := strings.Replace(serverVersionTime.String(), " WIB", "", -1)
+
+		queryFields := `(
+			"first_name", "last_name", "birth_date", 
+			"event_id", "document_id", "base_entity_id", "location_id",
+			"date_created", "event_date", "clientversionsubmissiondate", "serverversionsubmissiondate", 
+			"provider_id",  `
+		queryValues := fmt.Sprintf("VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%v', '%v', '%v', '%v', '%s', ",
+			isNull(first_name), isNull(last_name), isNull(birth_date),
+			strconv.Itoa(event_id), document_id, base_entity_id, location_id,
+			date_created, event_date, clientVersionSubmissionDate, serverVersionSubmissionDate,
+			provider_id)
 
 		fields := make(map[string]string)
 
@@ -156,6 +172,7 @@ func main() {
 	}
 
 	fmt.Println("RUN batchQuery")
+	fmt.Println(batchQuery)
 
 	_, err = db.Query(batchQuery)
 	checkErr(err)

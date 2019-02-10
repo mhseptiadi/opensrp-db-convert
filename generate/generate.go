@@ -61,10 +61,10 @@ func main() {
 		base_entity_id character varying(75),	
 		location_id character varying(75),	
 		
-		date_created date,
-		event_date date,
-		clientVersionSubmissionDate date,
-		serverVersionSubmissionDate date,
+		date_created timestamp without time zone,
+		event_date timestamp without time zone,
+		clientVersionSubmissionDate timestamp with time zone,
+		serverVersionSubmissionDate timestamp with time zone,
 		
 		provider_id character varying(75),
 		`

@@ -1,28 +1,30 @@
-CREATE TABLE sid2.client_ibu (
-    docId character varying(75),
-    dateCreated date,
-    baseEntityId character varying(75),
-    uniqueId character varying(75),
-    namaLengkap character varying(75),
-    namaSuami character varying(75),
+CREATE TABLE sid.client_ibu (
+    docid character varying(75),
+    datecreated date,
+    baseentityid character varying(75),
+    uniqueid character varying(75),
+    namalengkap character varying(75),
+    namasuami character varying(75),
     provinsi character varying(75),
     kabupaten character varying(75),
     kecamatan character varying(75),
     desa character varying(75),
     dusun character varying(75),
-    birthDate date,
+    birthdate date,
     nik character varying(75),
-    noIbu character varying(75),
-    providerId character varying(75),
+    noibu character varying(75),
+    providerid character varying(75)
 );
 
-CREATE TABLE sid2.client_anak (
-    docId character varying(75),
-    dateCreated date,
-    baseEntityId character varying(75),
-    uniqueId character varying(75),
-    birthDate date,
+
+CREATE TABLE sid.client_anak (
+    docid character varying(75),
+    datecreated date,
+    baseentityid character varying(75),
+    uniqueid character varying(75),
+    birthdate date,
     gender character varying(75),
-    ibuCaseId character varying(75),
-    providerId character varying(75),
+    ibucaseid character varying(75),
+    providerid character varying(75)
 );
+
