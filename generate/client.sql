@@ -1,6 +1,6 @@
 CREATE TABLE sid.client_ibu (
-    docid character varying(75),
-    datecreated date,
+    docid character varying(75) UNIQUE,
+    datecreated timestamp without time zone,
     baseentityid character varying(75),
     uniqueid character varying(75),
     namalengkap character varying(75),
@@ -18,8 +18,8 @@ CREATE TABLE sid.client_ibu (
 
 
 CREATE TABLE sid.client_anak (
-    docid character varying(75),
-    datecreated date,
+    docid character varying(75) UNIQUE,
+    datecreated timestamp without time zone,
     baseentityid character varying(75),
     uniqueid character varying(75),
     birthdate date,

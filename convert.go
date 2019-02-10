@@ -4,13 +4,14 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gosimple/slug"
 	_ "github.com/lib/pq"
+
+	lib "./lib"
 )
 
 const (
@@ -20,7 +21,7 @@ const (
 	PORT        = "5431"
 	RELPATH     = "./"
 	SCHEMA      = "sid"
-	LIMIT       = 1000
+	LIMIT       = 500
 )
 
 type Event struct {
@@ -53,16 +54,19 @@ type Obs_Struct struct {
 }
 
 func main() {
+
+	lib.SetRELPATH(RELPATH)
+
 	dbinfo := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable host=127.0.0.1 port=%s",
 		DB_USER, DB_PASSWORD, DB_NAME, PORT)
 
 	// dbinfo := fmt.Sprintf("postgres://%s:%s@127.0.0.1/%s?sslmode=disable", DB_USER, DB_PASSWORD, DB_NAME)
 
 	db, err := sql.Open("postgres", dbinfo)
-	checkErr(err)
+	lib.CheckErr(err)
 	defer db.Close()
 
-	eventID := lastEventID()
+	eventID := lib.LastEventID()
 	limit := LIMIT
 
 	fmt.Println("# Querying event id > " + strconv.Itoa(eventID))
@@ -80,7 +84,7 @@ func main() {
 
 	batchQuery := ""
 
-	checkErr(err)
+	lib.CheckErr(err)
 	for rows.Next() {
 		var event_id int
 		var document_id string
@@ -96,7 +100,7 @@ func main() {
 		var provider_id string
 		err = rows.Scan(&document_id, &base_entity_id, &location_id, &event_id, &jsonString, &event_type, &first_name, &last_name, &birth_date, &date_created, &event_date, &provider_id)
 		eventID = event_id
-		checkErr(err)
+		lib.CheckErr(err)
 
 		// fmt.Println(jsonString)
 		var eventData Event
@@ -122,7 +126,7 @@ func main() {
 			"date_created", "event_date", "clientversionsubmissiondate", "serverversionsubmissiondate", 
 			"provider_id",  `
 		queryValues := fmt.Sprintf("VALUES('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%v', '%v', '%v', '%v', '%s', ",
-			isNull(first_name), isNull(last_name), isNull(birth_date),
+			lib.IsNull(first_name), lib.IsNull(last_name), lib.IsNull(birth_date),
 			strconv.Itoa(event_id), document_id, base_entity_id, location_id,
 			date_created, event_date, clientVersionSubmissionDate, serverVersionSubmissionDate,
 			provider_id)
@@ -163,48 +167,40 @@ func main() {
 		fmt.Println(tableName)
 
 		batchQuery += query
-		// fmt.Println(query)
-		// _, err = db.Query(query)
-		// checkErr(err)
 
-		// writeEventID(eventID)
+		//check client query
+		if tableName == "identitas-ibu" {
+			fmt.Println("insert client ibu")
+			query = fmt.Sprintf(lib.InsertClientIbu(), document_id, date_created, base_entity_id, "", lib.IsNull(first_name), lib.IsNull(last_name),
+				fields["province"], fields["district"], fields["sub_district"], fields["village"], fields["sub_village"],
+				lib.IsNull(birth_date), "", "", provider_id)
+			fmt.Println(query)
+			batchQuery += query
+		}
+		if tableName == "child_registration" {
+			// fmt.Println("insert client anak")
+			// qq := `INSERT INTO "sid"."client_anak"("docid", "datecreated", "baseentityid", "uniqueid",
+			// "birthdate", "gender", "ibucaseid", "providerid") VALUES('%s', '%v', '%s', '%s', '%v', '%s', '%s', '%s') `
+			// query = fmt.Sprintf(qq, document_id, date_created, base_entity_id, "",
+			// lib.IsNull(birth_date), "",
+			// lib.IsNull(first_name), lib.IsNull(last_name),
+			// 	fields["province"], fields["district"], fields["sub_district"], fields["village"], fields["sub_village"],
+			// 	lib.IsNull(birth_date), "", "", provider_id)
+		}
+		if tableName == "edit_ibu" {
+			fmt.Println("update client ibu")
+		}
+		if tableName == "edit_bayi" {
+			fmt.Println("update client anak")
+		}
 
 	}
 
 	fmt.Println("RUN batchQuery")
-	fmt.Println(batchQuery)
+	// fmt.Println(batchQuery)
 
 	_, err = db.Query(batchQuery)
-	checkErr(err)
+	lib.CheckErr(err)
 
-	writeEventID(eventID)
-}
-
-func isNull(str *string) string {
-	if str != nil {
-		return *str
-	}
-	return string("")
-}
-
-func checkErr(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
-func lastEventID() (id int) {
-	b, err := ioutil.ReadFile(RELPATH + "event_id.txt")
-	if err != nil {
-		fmt.Print(err)
-	}
-	str := string(b)
-	i, _ := strconv.Atoi(str)
-	return i
-}
-
-func writeEventID(id int) error {
-	d1 := []byte(strconv.Itoa(id))
-	err := ioutil.WriteFile(RELPATH+"event_id.txt", d1, 0644)
-	return err
+	lib.WriteEventID(eventID)
 }
