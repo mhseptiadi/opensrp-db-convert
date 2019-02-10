@@ -18,6 +18,7 @@ const (
 	DB_NAME     = "opensrp"
 	PORT        = "5431"
 	RELPATH     = "./"
+	SCHEMA      = "sid"
 )
 
 type Event struct {
@@ -100,7 +101,7 @@ func main() {
 		// fmt.Println(eventData)
 
 		insertQuery := `
-		INSERT INTO "sid2"."tableName" 
+		INSERT INTO "` + SCHEMA + `"."tableName" 
 		`
 
 		tableName := slug.Make(event_type)

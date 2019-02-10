@@ -15,6 +15,7 @@ const (
 	DB_PASSWORD = "C4nT(T0ucH)Th1S"
 	DB_NAME     = "opensrp"
 	PORT        = "5431"
+	SCHEMA      = "sid"
 )
 
 type Event struct {
@@ -50,23 +51,28 @@ func main() {
 	dbinfo := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable host=127.0.0.1 port=%s",
 		DB_USER, DB_PASSWORD, DB_NAME, PORT)
 
-	Generate := `CREATE TABLE IF NOT EXISTS sid2.tableName (
+	Generate := `CREATE TABLE IF NOT EXISTS ` + SCHEMA + `.tableName (
 		first_name character varying(75),
 		last_name character varying(75),
 		birth_date character varying(75),
-		event_id character varying(75),
-		date_created character varying(75),
-		event_date character varying(75),
+		
+		event_id character varying(75) UNIQUE,
+		document_id character varying(75),
+		base_entity_id character varying(75),	
+		location_id character varying(75),	
+		
+		date_created date,
+		event_date date,
+		clientVersionSubmissionDate date,
+		serverVersionSubmissionDate date,
+		
 		provider_id character varying(75),
 		`
-
-	// alter := `ALTER TABLE "sid2"."kunjungan_anc" ADD COLUMN "test" character varying(75);`
 
 	db, err := sql.Open("postgres", dbinfo)
 	checkErr(err)
 	defer db.Close()
 
-	fmt.Println("# Querying")
 	rows, err := db.Query(`SELECT event_type
 	FROM core.event_metadata
 	GROUP BY event_type;`)
@@ -75,7 +81,7 @@ func main() {
 	for rows.Next() {
 		var event_type string
 		err = rows.Scan(&event_type)
-		fmt.Println(event_type)
+		// fmt.Println(event_type)
 
 		mainQuery := fmt.Sprintf(" select core.event.json from core.event join core.event_metadata on core.event.id = core.event_metadata.id where event_metadata.event_type = '%s' order by core.event.id desc", event_type)
 
@@ -92,7 +98,13 @@ func main() {
 
 			//unique check
 			for _, val := range eventData.Obs {
-				fields[val.Obs_form_submission_field] = val.Obs_form_submission_field
+				// var re = regexp.MustCompile(`([a-z])([A-Z])`)
+				// fieldName := re.ReplaceAllString(val.Obs_form_submission_field, `$1-$2`)
+				// fieldName = strings.Replace(fieldName, "-", "_", -1)
+				// fieldName = strings.ToLower(fieldName)
+
+				fieldName := strings.ToLower(val.Obs_form_submission_field)
+				fields[fieldName] = fieldName
 			}
 		}
 
@@ -110,7 +122,10 @@ func main() {
 
 		_, err = db.Query(query)
 		checkErr(err)
-		fmt.Println("========================================================================================================================")
+		fmt.Println()
+		fmt.Println()
+		fmt.Println()
+		// fmt.Println("========================================================================================================================")
 
 	}
 }
