@@ -89,8 +89,10 @@ func main() {
 
 		clientVersionTime := time.Unix(0, eventData.Version*int64(time.Millisecond))
 		clientVersionSubmissionDate := strings.Replace(clientVersionTime.String(), " WIB", "", -1)
+		clientVersionSubmissionDate = strings.Replace(clientVersionSubmissionDate, " CST", "", -1)
 		serverVersionTime := time.Unix(0, eventData.Server_version*int64(time.Millisecond))
 		serverVersionSubmissionDate := strings.Replace(serverVersionTime.String(), " WIB", "", -1)
+		serverVersionSubmissionDate = strings.Replace(serverVersionSubmissionDate, " CST", "", -1)
 
 		queryFields := `(
 			"first_name", "last_name", "birth_date", 
