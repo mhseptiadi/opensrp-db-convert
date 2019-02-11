@@ -21,37 +21,8 @@ const (
 	PORT        = "5431"
 	RELPATH     = "./"
 	SCHEMA      = "sid"
-	LIMIT       = 500
+	LIMIT       = 1000
 )
-
-type Event struct {
-	Id                 string       `json:"_id"`
-	Rev                string       `json:"_rev"`
-	Base_entity_id     string       `json:"baseEntityId"`
-	Date_created       string       `json:"dateCreated"`
-	Duration           int          `json:"duration"`
-	Entity_type        string       `json:"entityType"`
-	Event_date         string       `json:"eventDate"`
-	Event_type         string       `json:"eventType"`
-	Form_submission_id string       `json:"formSubmissionId"`
-	Location_id        string       `json:"locationId"`
-	Provider_id        string       `json:"providerId"`
-	Server_version     int64        `json:"serverVersion"`
-	Type               string       `json:"type"`
-	Version            int64        `json:"version"`
-	Obs                []Obs_Struct `json:"obs"`
-}
-
-type Obs_Struct struct {
-	Obs_relational_id         string
-	Obs_field_code            string   `json:"fieldCode"`
-	Obs_field_data_type       string   `json:"fieldDataType"`
-	Obs_field_type            string   `json:"fieldType"`
-	Obs_form_submission_field string   `json:"formSubmissionField"`
-	Obs_human_readable_values []string `json:"humanReadableValues"`
-	Obs_parent_code           string   `json:"parentCode"`
-	Obs_values                []string `json:"values"`
-}
 
 func main() {
 
@@ -103,7 +74,7 @@ func main() {
 		lib.CheckErr(err)
 
 		// fmt.Println(jsonString)
-		var eventData Event
+		var eventData lib.Event
 		json.Unmarshal([]byte(jsonString), &eventData)
 		// fmt.Println(eventData)
 
@@ -131,28 +102,7 @@ func main() {
 			date_created, event_date, clientVersionSubmissionDate, serverVersionSubmissionDate,
 			provider_id)
 
-		fields := make(map[string]string)
-
-		for _, ObsData := range eventData.Obs {
-
-			Obs_human_readable_values := ""
-			for _, Val := range ObsData.Obs_human_readable_values {
-				Obs_human_readable_values += Val
-			}
-
-			Obs_values := ""
-			for _, Val := range ObsData.Obs_values {
-				Obs_values += Val
-			}
-
-			values := Obs_values
-			if Obs_human_readable_values != "" {
-				values = Obs_human_readable_values
-			}
-
-			fields[strings.Replace(strings.ToLower(ObsData.Obs_form_submission_field), "-", "_", -1)] = values
-
-		}
+		fields := lib.EventParser(eventData.Obs)
 
 		for key, val := range fields {
 			queryFields += fmt.Sprintf("\"%s\", ", key)
@@ -171,21 +121,38 @@ func main() {
 		//check client query
 		if tableName == "identitas-ibu" {
 			fmt.Println("insert client ibu")
-			query = fmt.Sprintf(lib.InsertClientIbu(), document_id, date_created, base_entity_id, "", lib.IsNull(first_name), lib.IsNull(last_name),
+			query = fmt.Sprintf(lib.InsertClientIbu, document_id, date_created, base_entity_id, "", lib.IsNull(first_name), lib.IsNull(last_name),
 				fields["province"], fields["district"], fields["sub_district"], fields["village"], fields["sub_village"],
 				lib.IsNull(birth_date), "", "", provider_id)
-			fmt.Println(query)
+			// fmt.Println(query)
 			batchQuery += query
 		}
-		if tableName == "child_registration" {
-			// fmt.Println("insert client anak")
-			// qq := `INSERT INTO "sid"."client_anak"("docid", "datecreated", "baseentityid", "uniqueid",
-			// "birthdate", "gender", "ibucaseid", "providerid") VALUES('%s', '%v', '%s', '%s', '%v', '%s', '%s', '%s') `
-			// query = fmt.Sprintf(qq, document_id, date_created, base_entity_id, "",
-			// lib.IsNull(birth_date), "",
-			// lib.IsNull(first_name), lib.IsNull(last_name),
-			// 	fields["province"], fields["district"], fields["sub_district"], fields["village"], fields["sub_village"],
-			// 	lib.IsNull(birth_date), "", "", provider_id)
+		if tableName == "child-registration" {
+			fmt.Println("insert client anak")
+			q1 := `select core.event.json from core.event join core.event_metadata on core.event.id = core.event_metadata.id
+			where event_metadata.base_entity_id = '` + base_entity_id + `' and core.event_metadata.event_type = 'Child Registration'`
+			var json1 string
+			db.QueryRow(q1).Scan(&json1)
+			var event1 lib.Event
+			json.Unmarshal([]byte(json1), &event1)
+			fields1 := lib.EventParser(event1.Obs)
+
+			q2 := `select core.client.json from core.client join core.client_metadata on core.client.id = core.client_metadata.id
+			where client_metadata.base_entity_id = '` + base_entity_id + `'`
+			var json2 string
+			db.QueryRow(q2).Scan(&json2)
+			var client2 lib.Client
+			json.Unmarshal([]byte(json2), &client2)
+
+			gender := client2.Gender
+			ibucaseid := client2.Relationships.IbuCaseId[0]
+			namabayi := fields1["namabayi"]
+
+			query = fmt.Sprintf(lib.InsertClientAnak, document_id, date_created, base_entity_id, "",
+				lib.IsNull(birth_date), gender, ibucaseid, provider_id, namabayi)
+
+			// fmt.Println(query)
+			batchQuery += query
 		}
 		if tableName == "edit_ibu" {
 			fmt.Println("update client ibu")
