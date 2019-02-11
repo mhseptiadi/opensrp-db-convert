@@ -26,7 +26,8 @@ const (
 
 func main() {
 
-	lib.SetRELPATH(RELPATH)
+	lib.RELPATH = RELPATH
+	lib.SCHEMA = SCHEMA
 
 	dbinfo := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable host=127.0.0.1 port=%s",
 		DB_USER, DB_PASSWORD, DB_NAME, PORT)
@@ -121,7 +122,7 @@ func main() {
 		//check client query
 		if tableName == "identitas-ibu" {
 			fmt.Println("insert client ibu")
-			query = fmt.Sprintf(lib.InsertClientIbu, document_id, date_created, base_entity_id, "", lib.IsNull(first_name), lib.IsNull(last_name),
+			query = fmt.Sprintf(lib.InsertClientIbu(), document_id, date_created, base_entity_id, "", lib.IsNull(first_name), lib.IsNull(last_name),
 				fields["province"], fields["district"], fields["sub_district"], fields["village"], fields["sub_village"],
 				lib.IsNull(birth_date), "", "", provider_id)
 			// fmt.Println(query)
@@ -148,17 +149,23 @@ func main() {
 			ibucaseid := client2.Relationships.IbuCaseId[0]
 			namabayi := fields1["namabayi"]
 
-			query = fmt.Sprintf(lib.InsertClientAnak, document_id, date_created, base_entity_id, "",
+			query = fmt.Sprintf(lib.InsertClientAnak(), document_id, date_created, base_entity_id, "",
 				lib.IsNull(birth_date), gender, ibucaseid, provider_id, namabayi)
 
 			// fmt.Println(query)
 			batchQuery += query
 		}
-		if tableName == "edit_ibu" {
+		if tableName == "edit-ibu" {
 			fmt.Println("update client ibu")
+			query = fmt.Sprintf(lib.EditClientIbu(), fields["province"], fields["district"], fields["sub_district"], fields["village"], fields["sub_village"], base_entity_id)
+			// fmt.Println(query)
+			batchQuery += query
 		}
-		if tableName == "edit_bayi" {
+		if tableName == "edit-bayi" {
 			fmt.Println("update client anak")
+			query = fmt.Sprintf(lib.EditClientAnak(), fields["namabayi"], base_entity_id)
+			// fmt.Println(query)
+			batchQuery += query
 		}
 
 	}

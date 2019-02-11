@@ -8,11 +8,8 @@ import (
 )
 
 var (
-	RELPATH         = ""
-	InsertClientIbu = `INSERT INTO "sid"."client_ibu"
-	 ("docid", "datecreated", "baseentityid", "uniqueid", "namalengkap", "namasuami", "provinsi", "kabupaten", "kecamatan", "desa", "dusun", "birthdate", "nik", "noibu", "providerid") VALUES('%s', '%v', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%v', '%s', '%s', '%s');`
-	InsertClientAnak = `INSERT INTO "sid"."client_anak"("docid", "datecreated", "baseentityid", "uniqueid",
-	"birthdate", "gender", "ibucaseid", "providerid", "namabayi") VALUES('%s', '%v', '%s', '%s', '%v', '%s', '%s', '%s', '%s');`
+	SCHEMA  = ""
+	RELPATH = ""
 )
 
 type Client struct {
@@ -49,10 +46,6 @@ type Obs_Struct struct {
 	Obs_human_readable_values []string `json:"humanReadableValues"`
 	Obs_parent_code           string   `json:"parentCode"`
 	Obs_values                []string `json:"values"`
-}
-
-func SetRELPATH(val string) {
-	RELPATH = val
 }
 
 func IsNull(str *string) string {
@@ -109,4 +102,19 @@ func EventParser(obsData []Obs_Struct) map[string]string {
 	}
 
 	return fields
+}
+
+func InsertClientIbu() string {
+	return `INSERT INTO "` + SCHEMA + `"."client_ibu"
+("docid", "datecreated", "baseentityid", "uniqueid", "namalengkap", "namasuami", "provinsi", "kabupaten", "kecamatan", "desa", "dusun", "birthdate", "nik", "noibu", "providerid") VALUES('%s', '%v', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%v', '%s', '%s', '%s');`
+}
+func EditClientIbu() string {
+	return `UPDATE "` + SCHEMA + `"."client_ibu" SET "provinsi"='%s', "kabupaten"='%s', "kecamatan"='%s', "desa"='%s', "dusun"='%s' WHERE "client_ibu"."baseentityid" = '%s';`
+}
+func InsertClientAnak() string {
+	return `INSERT INTO "` + SCHEMA + `"."client_anak"("docid", "datecreated", "baseentityid", "uniqueid",
+"birthdate", "gender", "ibucaseid", "providerid", "namabayi") VALUES('%s', '%v', '%s', '%s', '%v', '%s', '%s', '%s', '%s');`
+}
+func EditClientAnak() string {
+	return `UPDATE "` + SCHEMA + `"."client_anak" SET "namabayi"='%s' WHERE "client_anak"."baseentityid" = '%s';`
 }

@@ -1,7 +1,23 @@
-CREATE TABLE sid.client_ibu (
-    docid character varying(75) UNIQUE,
+CREATE TABLE sid.client_anak (
+    docid character varying(75),
     datecreated timestamp without time zone,
-    baseentityid character varying(75),
+    baseentityid character varying(75) UNIQUE,
+    uniqueid character varying(75),
+    birthdate date,
+    gender character varying(75),
+    ibucaseid character varying(75),
+    providerid character varying(75),
+    namabayi character varying(75)
+);
+
+CREATE UNIQUE INDEX client_anak_baseentityid_key ON sid.client_anak(baseentityid text_ops);
+
+
+
+CREATE TABLE sid.client_ibu (
+    docid character varying(75),
+    datecreated timestamp without time zone,
+    baseentityid character varying(75) UNIQUE,
     uniqueid character varying(75),
     namalengkap character varying(75),
     namasuami character varying(75),
@@ -16,15 +32,4 @@ CREATE TABLE sid.client_ibu (
     providerid character varying(75)
 );
 
-
-CREATE TABLE sid.client_anak (
-    docid character varying(75) UNIQUE,
-    datecreated timestamp without time zone,
-    baseentityid character varying(75),
-    uniqueid character varying(75),
-    birthdate date,
-    gender character varying(75),
-    ibucaseid character varying(75),
-    providerid character varying(75)
-);
-
+CREATE UNIQUE INDEX client_ibu_baseentityid_key ON sid.client_ibu(baseentityid text_ops);
