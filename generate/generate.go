@@ -4,6 +4,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/gosimple/slug"
@@ -15,7 +19,7 @@ const (
 	DB_PASSWORD = "C4nT(T0ucH)Th1S"
 	DB_NAME     = "opensrp"
 	PORT        = "5431"
-	SCHEMA      = "sid"
+	SCHEMA      = "sid3"
 )
 
 type Event struct {
@@ -47,6 +51,19 @@ type Obs_Struct struct {
 	Obs_values                []string `json:"values"`
 }
 
+type form_json struct {
+	Title string `json:"title"`
+}
+
+type form_definition_json struct {
+	Form struct {
+		Fields []struct {
+			Name string `json:"name"`
+			Bind string `json:"bind"`
+		} `json:"fields"`
+	} `json:"form"`
+}
+
 func main() {
 	dbinfo := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable host=127.0.0.1 port=%s",
 		DB_USER, DB_PASSWORD, DB_NAME, PORT)
@@ -55,17 +72,17 @@ func main() {
 		first_name character varying(75),
 		last_name character varying(75),
 		birth_date character varying(75),
-		
+
 		event_id character varying(75) UNIQUE,
 		document_id character varying(75),
-		base_entity_id character varying(75),	
-		location_id character varying(75),	
-		
+		base_entity_id character varying(75),
+		location_id character varying(75),
+
 		date_created timestamp without time zone,
 		event_date timestamp without time zone,
 		clientVersionSubmissionDate timestamp with time zone,
 		serverVersionSubmissionDate timestamp with time zone,
-		
+
 		provider_id character varying(75),
 		`
 
@@ -73,60 +90,85 @@ func main() {
 	checkErr(err)
 	defer db.Close()
 
-	rows, err := db.Query(`SELECT event_type
-	FROM core.event_metadata
-	GROUP BY event_type;`)
-	checkErr(err)
+	var files []string
+	root := "./form"
+	err = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			files = append(files, path)
+		}
+		return nil
+	})
+	if err != nil {
+		panic(err)
+	}
+	for _, file := range files {
 
-	for rows.Next() {
-		var event_type string
-		err = rows.Scan(&event_type)
-		// fmt.Println(event_type)
-
-		mainQuery := fmt.Sprintf(" select core.event.json from core.event join core.event_metadata on core.event.id = core.event_metadata.id where event_metadata.event_type = '%s' order by core.event.id desc", event_type)
-
-		fields := make(map[string]string)
-
-		subrows, err := db.Query(mainQuery)
-		checkErr(err)
-		for subrows.Next() {
-			var jsonString string
-			err = subrows.Scan(&jsonString)
-
-			var eventData Event
-			json.Unmarshal([]byte(jsonString), &eventData)
-
-			//unique check
-			for _, val := range eventData.Obs {
-				// var re = regexp.MustCompile(`([a-z])([A-Z])`)
-				// fieldName := re.ReplaceAllString(val.Obs_form_submission_field, `$1-$2`)
-				// fieldName = strings.Replace(fieldName, "-", "_", -1)
-				// fieldName = strings.ToLower(fieldName)
-
-				fieldName := strings.ToLower(val.Obs_form_submission_field)
-				fields[fieldName] = fieldName
+		if file != "./form" {
+			// fmt.Println(file)
+			tableName := ""
+			dat, _ := ioutil.ReadFile(file + "/form.json")
+			if dat != nil {
+				var jsonArr form_json
+				err = json.Unmarshal(dat, &jsonArr)
+				checkErr(err)
+				tableName = jsonArr.Title
+			} else {
+				dat, _ := ioutil.ReadFile(file + "/form.xml")
+				if dat != nil {
+					r := regexp.MustCompile("<h3 id=\"form-title\">(.+)</h3>")
+					matches := r.FindStringSubmatch(string(dat))
+					if len(matches) > 1 {
+						tableName = matches[1]
+					}
+				}
 			}
+
+			tableName = slug.Make(tableName)
+			tableName = strings.Replace(tableName, "-", "_", -1)
+			tableName = strings.ToLower(tableName)
+			query := strings.Replace(Generate, "tableName", tableName, -1)
+			query = strings.Replace(query, "-", "_", -1)
+			// fmt.Println("tableName " + tableName)
+
+			dat, err = ioutil.ReadFile(file + "/form_definition.json")
+			checkErr(err)
+			var fieldsArr form_definition_json
+			err = json.Unmarshal(dat, &fieldsArr)
+			checkErr(err)
+
+			fields := make(map[string]string)
+
+			for _, fieldPath := range fieldsArr.Form.Fields {
+				if fieldPath.Bind != "" {
+					// fieldPathArr := strings.Split(fieldPath.Bind, "/")
+					// count := len(fieldPathArr)
+					// fieldName := fieldPathArr[count-1]
+					fieldName := fieldPath.Name
+					if fieldName != "start" && fieldName != "end" {
+						// example IMPORTANT
+						// refleks_patela_ibu >> reflekspatelaibu
+						// sub-village >> sub_village
+						fieldName = strings.Replace(fieldName, "_", "", -1)
+						fieldName = strings.Replace(fieldName, "-", "_", -1)
+						fieldName = strings.ToLower(fieldName)
+						// fmt.Println("fieldName " + fieldName)
+						fields[fieldName] = fieldName // to make sure it unique
+					}
+				}
+			}
+
+			for _, fieldName := range fields {
+				query += fieldName + " text,\n"
+			}
+
+			query = query[:len(query)-2] + ");"
+			fmt.Println(query)
+			fmt.Println("---------------------------------------")
+
+			// _, err := db.Query(query)
+			// checkErr(err)
+
 		}
-
-		tableName := slug.Make(event_type)
-
-		query := strings.Replace(Generate, "tableName", tableName, -1)
-		query = strings.Replace(query, "-", "_", -1)
-
-		for _, val := range fields {
-			query += strings.Replace(val, "-", "_", -1) + " character varying(75),\n"
-		}
-
-		query = query[:len(query)-2] + ");"
-		fmt.Println(query)
-
-		_, err = db.Query(query)
-		checkErr(err)
-		fmt.Println()
-		fmt.Println()
-		fmt.Println()
-		// fmt.Println("========================================================================================================================")
-
 	}
 }
 

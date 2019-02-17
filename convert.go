@@ -20,8 +20,8 @@ const (
 	DB_NAME     = "opensrp"
 	PORT        = "5431"
 	RELPATH     = "./"
-	SCHEMA      = "sid"
-	LIMIT       = 1000
+	SCHEMA      = "sid3"
+	LIMIT       = 500
 )
 
 func main() {
