@@ -3,6 +3,8 @@ package lib
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
+	"net/smtp"
 	"strconv"
 	"strings"
 )
@@ -57,6 +59,7 @@ func IsNull(str *string) string {
 
 func CheckErr(err error) {
 	if err != nil {
+		fmt.Println(err.Error())
 		panic(err)
 	}
 }
@@ -117,4 +120,21 @@ func InsertClientAnak() string {
 }
 func EditClientAnak() string {
 	return `UPDATE "` + SCHEMA + `"."client_anak" SET "namabayi"='%s' WHERE "client_anak"."baseentityid" = '%s';`
+}
+
+func SendErrMail(message string) {
+	// Set up authentication information.
+	auth := smtp.PlainAuth("", "admin@sid-indonesia.org", "Br34K(M3)Pl34sE", "sid-indonesia.org")
+
+	// Connect to the server, authenticate, set the sender and recipient,
+	// and send the email all in one step.
+	to := []string{"hasan-septiadi@sid-indonesia.org"}
+	msg := []byte("To: recipient@example.net\r\n" +
+		"Subject: discount Gophers!\r\n" +
+		"\r\n" +
+		message + "\r\n")
+	err := smtp.SendMail("sid-indonesia.org:25", auth, "admin@sid-indonesia.org", to, msg)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
