@@ -140,16 +140,27 @@ func main() {
 
 			for _, fieldPath := range fieldsArr.Form.Fields {
 				if fieldPath.Bind != "" {
-					// fieldPathArr := strings.Split(fieldPath.Bind, "/")
-					// count := len(fieldPathArr)
-					// fieldName := fieldPathArr[count-1]
-					fieldName := fieldPath.Name
+					fieldPathArr := strings.Split(fieldPath.Bind, "/")
+					count := len(fieldPathArr)
+					fieldName := fieldPathArr[count-1]
 					if fieldName != "start" && fieldName != "end" {
 						// example IMPORTANT
 						// refleks_patela_ibu >> reflekspatelaibu
 						// sub-village >> sub_village
-						fieldName = strings.Replace(fieldName, "_", "", -1)
 						fieldName = strings.Replace(fieldName, "-", "_", -1)
+						fieldName = strings.Replace(fieldName, "_", "", -1)
+						fieldName = strings.ToLower(fieldName)
+						// fmt.Println("fieldName " + fieldName)
+						fields[fieldName] = fieldName // to make sure it unique
+					}
+
+					fieldName = fieldPath.Name
+					if fieldName != "start" && fieldName != "end" {
+						// example IMPORTANT
+						// refleks_patela_ibu >> reflekspatelaibu
+						// sub-village >> sub_village
+						fieldName = strings.Replace(fieldName, "-", "_", -1)
+						fieldName = strings.Replace(fieldName, "_", "", -1)
 						fieldName = strings.ToLower(fieldName)
 						// fmt.Println("fieldName " + fieldName)
 						fields[fieldName] = fieldName // to make sure it unique
