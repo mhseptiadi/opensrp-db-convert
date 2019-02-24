@@ -1,4 +1,4 @@
-CREATE TABLE sid.client_anak (
+CREATE TABLE sid3.client_anak (
     docid character varying(75),
     datecreated timestamp without time zone,
     baseentityid character varying(75),
@@ -13,7 +13,7 @@ CREATE TABLE sid.client_anak (
 
 
 
-CREATE TABLE sid.client_ibu (
+CREATE TABLE sid3.client_ibu (
     docid character varying(75),
     datecreated timestamp without time zone,
     baseentityid character varying(75),

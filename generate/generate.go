@@ -101,6 +101,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	tables := make(map[string]map[string]string)
 	for _, file := range files {
 
 		if file != "./form" {
@@ -126,8 +127,6 @@ func main() {
 			tableName = slug.Make(tableName)
 			tableName = strings.Replace(tableName, "-", "_", -1)
 			tableName = strings.ToLower(tableName)
-			query := strings.Replace(Generate, "tableName", tableName, -1)
-			query = strings.Replace(query, "-", "_", -1)
 			// fmt.Println("tableName " + tableName)
 
 			dat, err = ioutil.ReadFile(file + "/form_definition.json")
@@ -168,18 +167,34 @@ func main() {
 				}
 			}
 
-			for _, fieldName := range fields {
-				query += fieldName + " text,\n"
+			if tables[tableName] != nil {
+				for _, val := range fields {
+					tables[tableName][val] = val
+				}
+			} else {
+				tables[tableName] = fields //utk handle multiple form dengan nama table yg sama
 			}
 
-			query = query[:len(query)-2] + ");"
-			fmt.Println(query)
-			fmt.Println("---------------------------------------")
-
-			// _, err := db.Query(query)
-			// checkErr(err)
-
 		}
+
+	}
+
+	for tableName, fields := range tables {
+
+		query := strings.Replace(Generate, "tableName", tableName, -1)
+		query = strings.Replace(query, "-", "_", -1)
+
+		for _, fieldName := range fields {
+			query += fieldName + " text,\n"
+		}
+
+		query = query[:len(query)-2] + ");"
+		fmt.Println(query)
+		fmt.Println("---------------------------------------")
+
+		// _, err := db.Query(query)
+		// checkErr(err)
+
 	}
 }
 
