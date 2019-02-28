@@ -34,4 +34,7 @@ func main() {
 	TambahAnc := repo.InitTambahAnc(db)
 	TambahAnc.Run()
 
+	KunjunganAnc := repo.InitKunjunganAnc(db)
+	KunjunganAnc.Run()
+
 }

@@ -11,39 +11,39 @@ import (
 )
 
 type (
-	TambahAnc interface {
+	KunjunganAnc interface {
 		Run()
 	}
 
-	tambahAnc struct {
+	kunjunganAnc struct {
 		db *sql.DB
 	}
 )
 
-func InitTambahAnc(d *sql.DB) TambahAnc {
-	return &tambahAnc{
+func InitKunjunganAnc(d *sql.DB) KunjunganAnc {
+	return &kunjunganAnc{
 		db: d,
 	}
 }
 
-func (ta tambahAnc) Run() {
-	eventID := lib.LastEventID("tambah_anc")
+func (ta kunjunganAnc) Run() {
+	eventID := lib.LastEventID("kunjungan_anc")
 	limit := LIMIT
 
 	fmt.Println("# Querying event id > " + strconv.Itoa(eventID))
 
 	mainQuery := fmt.Sprintf(` 
 	select *
-	from sid3.tambah_anc 
-	where CAST(nullif(tambah_anc.event_id, '') AS integer) > %d
-	order by CAST(nullif(tambah_anc.event_id, '') AS integer) asc 
+	from sid3.kunjungan_anc 
+	where CAST(nullif(kunjungan_anc.event_id, '') AS integer) > %d
+	order by CAST(nullif(kunjungan_anc.event_id, '') AS integer) asc 
 	limit %d`, eventID, limit)
 	rows, err := ta.db.Query(mainQuery)
 
 	lib.CheckErr(err)
 
 	insertQuery := `
-	INSERT INTO "sid_v2"."tambah_anc"(FIELDS_REPLACE) VALUES(VALUES_REPLACE) ;
+	INSERT INTO "sid_v2"."kunjungan_anc"(FIELDS_REPLACE) VALUES(VALUES_REPLACE) ;
 	`
 
 	columns, _ := rows.Columns()
@@ -67,7 +67,7 @@ func (ta tambahAnc) Run() {
 
 		for idx, column := range columns {
 			var scanner = row[idx].(*lib.MetalScanner)
-			if lib.Contains(model.Tambah_anc_v2, column) {
+			if lib.Contains(model.Kunjungan_anc_v2, column) {
 				queryFields += `"` + column + `", `
 				if scanner.Type == "nil" {
 					queryValues += `NULL, `
@@ -79,9 +79,9 @@ func (ta tambahAnc) Run() {
 					queryValues += `'` + scanner.Value.(string) + `', `
 				}
 
-				if column == "penyakitkronis" && scanner.Type != "nil" {
+				if column == "komplikasidalamkehamilan" && scanner.Type != "nil" {
 					namaPenyakit := scanner.Value.(string)
-					if lib.Contains(model.Tambah_anc_v2, namaPenyakit) {
+					if lib.Contains(model.Kunjungan_anc_v2, namaPenyakit) {
 						queryFields += `"` + namaPenyakit + `", `
 						queryValues += `TRUE, `
 					}
@@ -91,7 +91,6 @@ func (ta tambahAnc) Run() {
 			if column == "event_id" {
 				eventID, err = strconv.Atoi(scanner.Value.(string))
 			}
-			// fmt.Println(column, ":", scanner.Value)
 		}
 
 		queryFields = queryFields[:len(queryFields)-2]
@@ -106,5 +105,5 @@ func (ta tambahAnc) Run() {
 	_, err = ta.db.Query(batchQuery)
 	lib.CheckErr(err)
 
-	lib.WriteEventID(eventID, "tambah_anc")
+	lib.WriteEventID(eventID, "kunjungan_anc")
 }
