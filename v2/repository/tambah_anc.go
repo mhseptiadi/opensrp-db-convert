@@ -81,9 +81,11 @@ func (ta tambahAnc) Run() {
 
 				if column == "penyakitkronis" && scanner.Type != "nil" {
 					namaPenyakit := scanner.Value.(string)
-					if lib.Contains(model.Tambah_anc_v2, namaPenyakit) {
-						queryFields += `"` + namaPenyakit + `", `
-						queryValues += `TRUE, `
+					for _, val := range model.Tambah_anc_v2 {
+						if strings.Contains(namaPenyakit, val) {
+							queryFields += `"` + val + `", `
+							queryValues += `TRUE, `
+						}
 					}
 				}
 			}

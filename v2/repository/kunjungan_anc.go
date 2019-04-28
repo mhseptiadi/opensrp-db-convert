@@ -81,10 +81,14 @@ func (ta kunjunganAnc) Run() {
 
 				if column == "komplikasidalamkehamilan" && scanner.Type != "nil" {
 					namaPenyakit := scanner.Value.(string)
-					if lib.Contains(model.Kunjungan_anc_v2, namaPenyakit) {
-						queryFields += `"` + namaPenyakit + `", `
-						queryValues += `TRUE, `
+
+					for _, val := range model.Kunjungan_anc_v2 {
+						if strings.Contains(namaPenyakit, val) {
+							queryFields += `"` + val + `", `
+							queryValues += `TRUE, `
+						}
 					}
+
 				}
 			}
 
