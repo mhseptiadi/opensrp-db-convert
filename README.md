@@ -1,6 +1,6 @@
 # opensrp-db-conver
 
-There is 2 main files here. 
+There are 2 main files here. 
 - generate/generate.go | it is used for generate the schema at the begining of the conversion
 - convert.go | it is used to incrementaly convert the data
 
