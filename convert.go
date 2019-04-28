@@ -21,7 +21,7 @@ const (
 	PORT        = "5431"
 	RELPATH     = "./"
 	SCHEMA      = "sid3"
-	LIMIT       = 500
+	LIMIT       = 1000
 )
 
 func main() {
@@ -108,7 +108,9 @@ func main() {
 		fields := lib.EventParser(eventData.Obs)
 
 		for key, val := range fields {
-			queryFields += fmt.Sprintf("\"%s\", ", key)
+			fieldName := strings.Replace(key, "-", "_", -1)
+			fieldName = strings.Replace(fieldName, "_", "", -1)
+			queryFields += fmt.Sprintf("\"%s\", ", fieldName)
 			queryValues += fmt.Sprintf("'%s', ", val)
 		}
 
