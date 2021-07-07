@@ -18,7 +18,7 @@ const (
 	DB_USER     = "opensrp_admin"
 	DB_PASSWORD = "C4nT(T0ucH)Th1S"
 	DB_NAME     = "opensrp"
-	PORT        = "5431"
+	PORT        = "5430"
 	RELPATH     = "./"
 	SCHEMA      = "sid3"
 	LIMIT       = 1000
